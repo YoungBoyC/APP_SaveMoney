@@ -1,0 +1,17 @@
+{
+  "name": "SaveMoney - Quản Lý Tài Chính",
+  "short_name": "SaveMoney",
+  "description": "Ứng dụng quản lý thu chi, ngân sách và tiết kiệm chuyên nghiệp.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2488/2488749.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

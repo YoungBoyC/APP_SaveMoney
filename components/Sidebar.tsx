@@ -15,7 +15,7 @@ const Sidebar: React.FC = () => {
     <aside className="w-64 bg-white border-r h-screen sticky top-0 hidden md:flex flex-col">
       <div className="p-6 border-b">
         <h1 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
-          <span className="text-3xl">🛡️</span> MoneyCare
+          <span className="text-3xl"></span> SaveMoney
         </h1>
       </div>
       <nav className="flex-1 p-4 space-y-2">
@@ -48,7 +48,7 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
       */}
-      
+
     </aside>
   );
 };
