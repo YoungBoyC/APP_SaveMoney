@@ -1,7 +1,9 @@
+
 {
-  "name": "Copy of MoneyCare - Quản Lý Tài Chính Cá Nhân",
-  "description": "Ứng dụng quản lý thu chi, ngân sách và tiết kiệm chuyên nghiệp lấy cảm hứng từ Money Lover.",
+  "name": "SaveMoney",
+  "description": "Ứng dụng quản lý thu chi chuyên nghiệp.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }
