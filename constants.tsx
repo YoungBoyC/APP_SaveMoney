@@ -1,4 +1,3 @@
-
 import { Category } from './types';
 
 export const CATEGORIES: Category[] = [
@@ -25,7 +24,7 @@ export const WALLET_TYPES = [
 ];
 
 export const SUPPORTED_BANKS = [
-  { id: 'vcb', name: 'Vietcombank', icon: '🏦', shortName: 'VCB', color: '#006a33' },
+  { id: 'vcb', name: 'Vietcombank', icon: 'https://vcbdigibank.vietcombank.com.vn/assets/images/logo.png', shortName: 'VCB', color: '#006a33' },
   { id: 'tcb', name: 'Techcombank', icon: '🏦', shortName: 'TCB', color: '#e31837' },
   { id: 'bidv', name: 'BIDV', icon: '🏦', shortName: 'BIDV', color: '#213a8f' },
   { id: 'vpb', name: 'VPBank', icon: '🏦', shortName: 'VPB', color: '#00b14f' },

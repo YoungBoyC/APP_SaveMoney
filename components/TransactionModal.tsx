@@ -18,7 +18,6 @@ const TransactionModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [note, setNote] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Luôn phải render các Hook ở trên cùng, sau đó mới kiểm tra isOpen
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -8,7 +8,6 @@ const Budgets: React.FC = () => {
   const { budgets, transactions, deleteBudget } = useFinance();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Tính toán chi tiêu thực tế cho mỗi ngân sách trong tháng hiện tại
   const budgetStats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();

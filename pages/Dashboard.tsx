@@ -1,170 +1,286 @@
-
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { FileDown, ArrowUpRight, ArrowDownRight, TrendingUp, Sparkles } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { CATEGORIES } from '../constants';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { Transaction } from '../types';
+import JobSuggestions from '../components/JobSuggestions';
 
 const Dashboard: React.FC = () => {
-  const { totalBalance, transactions } = useFinance();
+  const { totalBalance, transactions, currency } = useFinance();
+  const navigate = useNavigate();
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
-  const income = transactions
-    .filter(t => t.type === 'INCOME')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const monthsWithData = useMemo(() => {
+    const months = new Set<string>();
+    transactions.forEach(t => {
+      const d = new Date(t.date);
+      months.add(`${d.getMonth()}-${d.getFullYear()}`);
+    });
+    return months;
+  }, [transactions]);
 
-  const expenses = transactions
+  const filterByMonth = (txs: Transaction[], month: number, year: number) => {
+    return txs.filter(t => {
+      const d = new Date(t.date);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+  };
+
+  const currentViewTxs = filterByMonth(transactions, selectedMonth, selectedYear);
+
+  const expenses = currentViewTxs.filter(t => t.type === 'EXPENSE').reduce((a, b) => a + b.amount, 0);
+  const income = currentViewTxs.filter(t => t.type === 'INCOME').reduce((a, b) => a + b.amount, 0);
+
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  ];
+
+  const expenseByCategory = currentViewTxs
     .filter(t => t.type === 'EXPENSE')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    .reduce((acc: Record<string, { name: string; value: number; color: string }>, t) => {
+      const cat = CATEGORIES.find(c => c.id === t.categoryId);
+      const name = cat?.name || 'Khác';
+      if (!acc[name]) {
+        acc[name] = { name, value: 0, color: cat?.color || 'bg-gray-500' };
+      }
+      acc[name].value += t.amount;
+      return acc;
+    }, {});
 
-  // Chart data for expenses by category
-  const expenseData = CATEGORIES
-    .filter(c => c.type === 'EXPENSE')
-    .map(c => ({
-      name: c.name,
-      value: transactions
-        .filter(t => t.categoryId === c.id)
-        .reduce((acc, curr) => acc + curr.amount, 0),
-      color: c.color.replace('bg-', '')
-    }))
-    .filter(d => d.value > 0);
+  const pieData = Object.values(expenseByCategory);
+
+  const getHexColor = (twClass: string) => {
+    const map: Record<string, string> = {
+      'bg-orange-500': '#f97316',
+      'bg-blue-500': '#3b82f6',
+      'bg-pink-500': '#ec4899',
+      'bg-green-500': '#22c55e',
+      'bg-purple-500': '#a855f7',
+      'bg-red-500': '#ef4444',
+      'bg-indigo-500': '#6366f1',
+      'bg-emerald-600': '#059669',
+      'bg-yellow-500': '#eab308',
+      'bg-rose-500': '#f43f5e',
+      'bg-gray-500': '#6b7280',
+    };
+    return map[twClass] || '#6b7280';
+  };
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency }).format(val);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Ngày', 'Loại', 'Hạng mục', 'Số tiền', 'Ghi chú'];
+    const data = transactions.map(t => [
+      t.date,
+      t.type === 'INCOME' ? 'Thu' : 'Chi',
+      CATEGORIES.find(c => c.id === t.categoryId)?.name || 'Khác',
+      t.amount,
+      t.note
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      [headers, ...data].map(e => e.join(",")).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Bao_Cao_Tai_Chinh_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Chào bạn trở lại! 👋</h2>
-          <p className="text-gray-500 mt-1">Cùng xem tình hình tài chính của bạn hôm nay nhé.</p>
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight">Thịnh vượng hơn mỗi ngày 🚀</h2>
+          <p className="text-gray-500 font-medium">Bạn đã tiết kiệm được {formatCurrency(income - expenses)} trong {monthNames[selectedMonth]} {selectedYear}.</p>
+          
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mt-4 bg-indigo-50 border border-indigo-100 p-3 rounded-2xl flex items-center gap-3 max-w-md"
+          >
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+              <Sparkles size={16} />
+            </div>
+            <p className="text-[11px] font-bold text-indigo-900 leading-tight">
+              <span className="font-black">AI Tip:</span> Bạn có thể kiếm thêm thu nhập bằng cách làm Freelance hoặc Affiliate. Xem các gợi ý bên dưới!
+            </p>
+          </motion.div>
         </div>
-        <div className="bg-white p-4 rounded-3xl shadow-sm border flex items-center gap-4">
-          <div className="bg-indigo-100 p-3 rounded-2xl text-indigo-600 text-2xl">💰</div>
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tổng số dư</p>
-            <p className="text-2xl font-black text-gray-900">{formatCurrency(totalBalance)}</p>
+        <div className="flex flex-col md:flex-row gap-3 items-end md:items-center">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Chọn thời gian</span>
+            <div className="flex gap-2">
+              <select 
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="bg-gray-100 border-none rounded-xl px-4 py-2 text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+              >
+                {monthNames.map((name, i) => (
+                  <option key={i} value={i}>
+                    {name} {monthsWithData.has(`${i}-${selectedYear}`) ? '•' : ''}
+                  </option>
+                ))}
+              </select>
+              <select 
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="bg-gray-100 border-none rounded-xl px-4 py-2 text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+              >
+                {[thisYear - 1, thisYear, thisYear + 1].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          <button onClick={exportToCSV} className="p-3 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-600 hover:border-indigo-600 transition-all flex items-center gap-2 h-[40px]">
+            <FileDown size={20} />
+          </button>
         </div>
       </header>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-emerald-500 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-xl shadow-emerald-100">
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
-          <p className="text-emerald-100 font-medium mb-1">Tổng Thu Nhập</p>
-          <h3 className="text-3xl font-black mb-6">{formatCurrency(income)}</h3>
-          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-3 inline-flex items-center gap-2 text-sm">
-            <span className="text-lg">📈</span>
-            Tháng này
-          </div>
-        </div>
-
-        <div className="bg-rose-500 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-xl shadow-rose-100">
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
-          <p className="text-rose-100 font-medium mb-1">Tổng Chi Tiêu</p>
-          <h3 className="text-3xl font-black mb-6">{formatCurrency(expenses)}</h3>
-          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-3 inline-flex items-center gap-2 text-sm">
-            <span className="text-lg">📉</span>
-            Tháng này
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white lg:col-span-1 md:col-span-2 shadow-xl shadow-gray-200">
-          <p className="text-gray-400 font-medium mb-1">Tỷ lệ Tiết kiệm</p>
-          <h3 className="text-3xl font-black mb-6">
-            {income > 0 ? Math.round(((income - expenses) / income) * 100) : 0}%
-          </h3>
-          <div className="w-full bg-gray-800 rounded-full h-2.5 mb-2">
-            <div 
-              className="bg-indigo-500 h-2.5 rounded-full transition-all duration-1000" 
-              style={{ width: `${income > 0 ? Math.min(100, Math.max(0, ((income - expenses) / income) * 100)) : 0}%` }}
-            ></div>
-          </div>
-          <p className="text-xs text-gray-500">Đặt mục tiêu đạt 20% tháng này</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Spending Analysis */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border">
-          <div className="flex justify-between items-center mb-8">
-            <h4 className="text-xl font-bold">Phân tích Chi tiêu</h4>
-            <select className="bg-gray-100 border-none rounded-xl text-sm px-4 py-2 outline-none">
-              <option>Tháng này</option>
-              <option>Tháng trước</option>
-            </select>
-          </div>
-          <div className="h-[300px]">
-            {expenseData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {expenseData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color === 'orange-500' ? '#f97316' : entry.color === 'blue-500' ? '#3b82f6' : '#ec4899'} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                <span className="text-4xl mb-4">🏜️</span>
-                <p>Chưa có dữ liệu chi tiêu</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm col-span-1 lg:col-span-2 space-y-8">
+           <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="w-full md:w-1/2 h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie 
+                        data={pieData.length > 0 ? pieData : [{ name: 'Trống', value: 1, color: 'bg-gray-100' }]} 
+                        cx="50%" 
+                        cy="50%" 
+                        innerRadius={60} 
+                        outerRadius={80} 
+                        paddingAngle={5} 
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={getHexColor(entry.color)} />
+                        ))}
+                        {pieData.length === 0 && <Cell fill="#f3f4f6" />}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
               </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-             {expenseData.slice(0, 4).map((item, idx) => (
-               <div key={idx} className="flex items-center gap-2">
-                 <div className={`w-3 h-3 rounded-full bg-${item.color}`}></div>
-                 <span className="text-sm text-gray-600 truncate">{item.name}</span>
-                 <span className="text-sm font-bold ml-auto">{Math.round((item.value / expenses) * 100)}%</span>
+              <div className="w-full md:w-1/2 space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Số dư khả dụng</p>
+                    <p className="text-4xl font-black text-gray-900">{formatCurrency(totalBalance)}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                      <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                        <ArrowUpRight size={14} strokeWidth={3} />
+                        <p className="text-[10px] font-bold uppercase">Tổng thu</p>
+                      </div>
+                      <p className="font-black text-emerald-700">{formatCurrency(income)}</p>
+                    </div>
+                    <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                      <div className="flex items-center gap-2 text-rose-600 mb-1">
+                        <ArrowDownRight size={14} strokeWidth={3} />
+                        <p className="text-[10px] font-bold uppercase">Tổng chi</p>
+                      </div>
+                      <p className="font-black text-rose-700">{formatCurrency(expenses)}</p>
+                    </div>
+                  </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-4 border-t border-gray-50">
+              {pieData.map((item, i) => {
+                const percentage = expenses > 0 ? ((item.value / expenses) * 100).toFixed(1) : 0;
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-600 truncate">{item.name}</span>
+                      <span className="text-[10px] font-black text-indigo-500">{percentage}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+           </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white flex flex-col justify-between shadow-2xl shadow-gray-200 overflow-hidden relative group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full -mr-10 -mt-10 blur-3xl group-hover:bg-indigo-500/30 transition-all duration-500"></div>
+           <div>
+             <div className="flex items-center gap-2 mb-2">
+               <Sparkles className="text-indigo-400" size={20} />
+               <h4 className="text-xl font-black italic">SaveMoney Pro</h4>
+             </div>
+             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">ID: MC-888-999</p>
+           </div>
+           
+           <div className="mt-20">
+             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] mb-2">Hạng mức tài chính</p>
+             <div className="flex items-center gap-3">
+               <div className="flex-1 bg-gray-800 h-2 rounded-full overflow-hidden">
+                 <div className="bg-indigo-500 h-full w-3/4 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
                </div>
-             ))}
-          </div>
-        </div>
-
-        {/* Recent Transactions */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border">
-          <div className="flex justify-between items-center mb-8">
-            <h4 className="text-xl font-bold">Giao dịch gần đây</h4>
-            <button className="text-indigo-600 text-sm font-bold hover:underline">Tất cả</button>
-          </div>
-          <div className="space-y-5">
-            {transactions.slice(0, 5).map(t => {
-              const category = CATEGORIES.find(c => c.id === t.categoryId);
-              return (
-                <div key={t.id} className="flex items-center gap-4 group">
-                  <div className={`w-12 h-12 rounded-2xl ${category?.color} flex items-center justify-center text-2xl shadow-lg shadow-gray-100 group-hover:scale-110 transition-transform`}>
-                    {category?.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900">{category?.name}</p>
-                    <p className="text-xs text-gray-400">{new Date(t.date).toLocaleDateString('vi-VN')}</p>
-                  </div>
-                  <div className={`text-right ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <p className="font-black">{t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}</p>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-tighter">Hoàn thành</p>
-                  </div>
-                </div>
-              );
-            })}
-            {transactions.length === 0 && (
-              <div className="text-center py-10">
-                <p className="text-gray-400 italic">Chưa có giao dịch nào được ghi lại.</p>
-              </div>
-            )}
-          </div>
+               <span className="text-sm font-black text-indigo-400">GOLD</span>
+             </div>
+           </div>
         </div>
       </div>
+
+      <JobSuggestions />
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+            <TrendingUp size={20} className="text-indigo-600" />
+            Giao dịch gần đây
+          </h3>
+          <button onClick={() => navigate('/transactions')} className="text-xs font-bold text-indigo-600 hover:underline">Xem tất cả</button>
+        </div>
+        
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+          {currentViewTxs.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {currentViewTxs.slice(0, 5).map((t) => {
+                const cat = CATEGORIES.find(c => c.id === t.categoryId);
+                return (
+                  <div key={t.id} className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 ${cat?.color || 'bg-gray-100'} rounded-2xl flex items-center justify-center text-2xl shadow-sm`}>
+                        {cat?.icon || '❓'}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900">{cat?.name || 'Khác'}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-black ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </p>
+                      <p className="text-[10px] text-gray-400 italic truncate max-w-[150px]">{t.note}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-16 text-center space-y-4">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-4xl mx-auto">📭</div>
+              <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">Không có giao dịch nào</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

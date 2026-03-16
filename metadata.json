@@ -1,7 +1,6 @@
-
 {
-  "name": "SaveMoney",
-  "description": "Ứng dụng quản lý thu chi chuyên nghiệp.",
+  "name": "SaveMoney Pro",
+  "description": "Hệ thống quản lý tài chính cá nhân thông minh tích hợp AI.",
   "requestFramePermissions": [
     "camera",
     "microphone"

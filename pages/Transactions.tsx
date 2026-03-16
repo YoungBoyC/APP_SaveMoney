@@ -25,10 +25,10 @@ const Transactions: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-3xl font-black text-gray-900">Sổ Giao Dịch</h2>
         <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border shadow-sm">
-          {['ALL', 'INCOME', 'EXPENSE'].map((type) => (
+          {(['ALL', 'INCOME', 'EXPENSE'] as const).map((type) => (
             <button
               key={type}
-              onClick={() => setFilterType(type as any)}
+              onClick={() => setFilterType(type)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 filterType === type ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
               }`}

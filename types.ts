@@ -1,4 +1,3 @@
-
 export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export interface Category {
@@ -9,14 +8,6 @@ export interface Category {
   type: TransactionType;
 }
 
-export interface Wallet {
-  id: string;
-  name: string;
-  balance: number;
-  type: 'CASH' | 'BANK' | 'E-WALLET';
-  icon: string;
-}
-
 export interface Transaction {
   id: string;
   amount: number;
@@ -25,7 +16,14 @@ export interface Transaction {
   walletId: string;
   date: string;
   note: string;
-  image?: string;
+}
+
+export interface Wallet {
+  id: string;
+  name: string;
+  balance: number;
+  type: 'CASH' | 'BANK' | 'E-WALLET';
+  icon: string;
 }
 
 export interface Budget {
@@ -42,4 +40,37 @@ export interface SavingGoal {
   currentAmount: number;
   deadline: string;
   icon: string;
+}
+
+export interface Bill {
+  id: string;
+  name: string;
+  amount: number;
+  dueDate: string;
+  category: string;
+  isPaid: boolean;
+}
+
+export interface Loan {
+  id: string;
+  person: string;
+  amount: number;
+  type: 'BORROW' | 'LEND';
+  dueDate: string;
+  note: string;
+}
+
+export interface Investment {
+  id: string;
+  name: string;
+  amount: number;
+  currentValue: number;
+  type: 'STOCK' | 'GOLD' | 'CRYPTO' | 'REAL_ESTATE';
+}
+
+export interface SpendingGroup {
+  id: string;
+  name: string;
+  members: string[];
+  totalSpent: number;
 }

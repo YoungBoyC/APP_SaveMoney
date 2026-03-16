@@ -15,7 +15,7 @@ const WalletModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [balance, setBalance] = useState('');
   const [type, setType] = useState<'CASH' | 'BANK' | 'E-WALLET'>('CASH');
   const [searchBank, setSearchBank] = useState('');
-  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [selectedBank, setSelectedBank] = useState<{ id: string; name: string; shortName: string; icon: string } | null>(null);
 
   // Hook useMemo phải nằm trên câu lệnh return null để số lượng Hook không đổi
   const filteredBanks = useMemo(() => {
@@ -41,7 +41,7 @@ const WalletModal: React.FC<Props> = ({ isOpen, onClose }) => {
     resetAndClose();
   };
 
-  const handleBankSelect = (bank: any) => {
+  const handleBankSelect = (bank: { id: string; name: string; shortName: string; icon: string }) => {
     setSelectedBank(bank);
     setStep('SYNCING');
     setTimeout(() => {
@@ -221,7 +221,7 @@ const WalletModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       <button
                         key={wType.id}
                         type="button"
-                        onClick={() => setType(wType.id as any)}
+                        onClick={() => setType(wType.id as 'CASH' | 'BANK' | 'E-WALLET')}
                         className={`p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
                           type === wType.id 
                           ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
