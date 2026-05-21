@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Wallet, CalendarRange, Target, MoreHorizontal, X, FileText, Users, TrendingUp, Landmark } from 'lucide-react';
+import { LayoutDashboard, Receipt, Wallet, CalendarRange, Target, MoreHorizontal, X, FileText, Users, TrendingUp, Landmark, BarChart3  } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BottomNav: React.FC = () => {
@@ -19,6 +19,7 @@ const BottomNav: React.FC = () => {
     { to: '/loans', label: 'Vay & Nợ', icon: <Landmark size={20} className="text-blue-500" /> },
     { to: '/investments', label: 'Đầu tư', icon: <TrendingUp size={20} className="text-emerald-500" /> },
     { to: '/groups', label: 'Nhóm', icon: <Users size={20} className="text-purple-500" /> },
+    { to: '/comparison', label: 'So Sánh', icon: <BarChart3 size={20} className="text-indigo-500" /> },
   ];
 
   return (

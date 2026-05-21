@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Router } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { FinanceProvider } from './context/FinanceContext';
 import Sidebar from './components/Sidebar';
@@ -15,6 +15,7 @@ import Investments from './pages/Investments';
 import Groups from './pages/Groups';
 import TransactionModal from './components/TransactionModal';
 import ChatBot from './components/ChatBot';
+import Comparison from './pages/Comparison';
 
 const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,8 +37,8 @@ const App: React.FC = () => {
               <Route path="/loans" element={<Loans />} />
               <Route path="/investments" element={<Investments />} />
               <Route path="/groups" element={<Groups />} />
+              <Route path="/comparison" element={<Comparison />} />            
             </Routes>
-
             {/* Global Add Button */}
             <button
               onClick={() => setIsModalOpen(true)}

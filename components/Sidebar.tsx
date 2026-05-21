@@ -10,7 +10,8 @@ import {
   ReceiptText, 
   HandCoins, 
   TrendingUp, 
-  Users 
+  Users,
+  BarChart3 
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -24,6 +25,7 @@ const Sidebar: React.FC = () => {
     { to: '/loans', label: 'Vay & Nợ', icon: <HandCoins size={20} /> },
     { to: '/investments', label: 'Đầu tư', icon: <TrendingUp size={20} /> },
     { to: '/groups', label: 'Nhóm', icon: <Users size={20} /> },
+    { to: '/comparison', label: 'So Sánh', icon: <BarChart3 size={20} /> },
   ];
 
   return (
