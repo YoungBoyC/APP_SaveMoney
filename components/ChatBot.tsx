@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, X, Minimize2, Maximize2, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai"; 
 import { useFinance } from '../context/FinanceContext';
 
 interface Message {
@@ -25,6 +25,8 @@ const ChatBot: React.FC = () => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Lấy dữ liệu thực tế từ hệ thống của bạn
   const { transactions, wallets, budgets, totalBalance } = useFinance();
 
   const scrollToBottom = () => {
@@ -35,68 +37,78 @@ const ChatBot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (textOverride?: string) => {
+    const messageText = textOverride || input;
+    if (!messageText.trim() || isLoading) return;
 
+    // 1. Thêm tin nhắn của người dùng vào giao diện
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: messageText,
       sender: 'user',
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      // 2. Lấy API Key (Hỗ trợ Expo, Vite và CRA)
+      const apiKey = 
+        process.env.EXPO_PUBLIC_GEMINI_API_KEY || 
+        (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+        (process as any).env?.REACT_APP_GEMINI_API_KEY;
+      
       if (!apiKey) {
-        throw new Error("API Key not found. Please set GEMINI_API_KEY in your environment.");
+        console.error("LỖI: Không tìm thấy API Key trong biến môi trường!");
+        throw new Error("API_KEY_MISSING");
       }
 
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `
-              Bạn là một chuyên gia tư vấn tài chính cá nhân cho ứng dụng SaveMoney Pro.
-              Dưới đây là dữ liệu tài chính hiện tại của người dùng:
-              - Tổng số dư: ${totalBalance.toLocaleString()} VND
-              - Số lượng ví: ${wallets.length}
-              - Số lượng giao dịch: ${transactions.length}
-              - Số lượng ngân sách: ${budgets.length}
-
-              Người dùng hỏi: "${currentInput}"
-
-              Hãy trả lời một cách chuyên nghiệp, thân thiện và đưa ra lời khuyên hữu ích dựa trên dữ liệu (nếu có). 
-              Nếu người dùng hỏi về các con số cụ thể, hãy sử dụng dữ liệu được cung cấp.
-              Trả lời bằng tiếng Việt.
-            ` }]
-          }
-        ],
-        config: {
-          systemInstruction: "Bạn là trợ lý tài chính thông minh của SaveMoney Pro. Hãy tư vấn ngắn gọn, súc tích và thực tế. Nếu người dùng hỏi về cách kiếm thêm thu nhập, hãy gợi ý các công việc online như Freelance Design (vLance), Content Writing (Freelancer.com), Web Development (Upwork), hoặc Affiliate Marketing (Accesstrade) và nhắc họ xem phần 'Gợi ý kiếm thêm thu nhập' trên Dashboard."
-        }
+      // 3. Khởi tạo Gemini AI
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: "Bạn là một chuyên gia tư vấn tài chính cá nhân cho ứng dụng SaveMoney Pro. Hãy trả lời ngắn gọn, thực tế bằng tiếng Việt. Luôn dựa vào dữ liệu người dùng cung cấp bên dưới để đưa ra lời khuyên chính xác về số dư và ngân sách."
       });
 
+      // 4. Tạo nội dung câu hỏi kèm dữ liệu thực tế
+      const prompt = `
+        Dữ liệu tài chính hiện tại của người dùng:
+        - Tổng số dư: ${totalBalance.toLocaleString('vi-VN')} VND
+        - Số lượng ví: ${wallets.length}
+        - Số lượng giao dịch gần đây: ${transactions.length}
+        - Số lượng ngân sách đang quản lý: ${budgets.length}
+
+        Câu hỏi của người dùng: "${messageText}"
+      `;
+
+      // 5. Gửi yêu cầu tới Google AI
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const responseText = response.text();
+
+      // 6. Cập nhật câu trả lời của bot
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: response.text || "Xin lỗi, tôi gặp chút trục trặc khi xử lý yêu cầu của bạn.",
+        text: responseText,
         sender: 'bot',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botResponse]);
-    } catch (error) {
-      console.error("Gemini Error:", error);
+
+    } catch (error: any) {
+      console.error("Chi tiết lỗi Gemini:", error);
+      
+      let errorHint = "Rất tiếc, tôi không thể kết nối với AI lúc này. Vui lòng thử lại sau.";
+      if (error.message === "API_KEY_MISSING") {
+        errorHint = "Lỗi: Chưa cấu hình API Key trong file .env. Hãy kiểm tra lại EXPO_PUBLIC_GEMINI_API_KEY.";
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Rất tiếc, tôi không thể kết nối với trí tuệ nhân tạo lúc này. Vui lòng thử lại sau.",
+        text: errorHint,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -108,7 +120,7 @@ const ChatBot: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Nút nổi AI */}
       {!isOpen && (
         <motion.button
           drag
@@ -125,7 +137,7 @@ const ChatBot: React.FC = () => {
         </motion.button>
       )}
 
-      {/* Chat Window */}
+      {/* Cửa sổ Chat chính */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -135,7 +147,7 @@ const ChatBot: React.FC = () => {
               y: 0, 
               scale: 1,
               height: isMinimized ? '80px' : (window.innerWidth < 768 ? 'calc(100vh - 40px)' : '600px'),
-              width: isMinimized ? '280px' : (window.innerWidth < 768 ? 'calc(100vw - 2rem)' : '400px')
+              width: isMinimized ? '320px' : (window.innerWidth < 768 ? 'calc(100vw - 2rem)' : '400px')
             }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             className="fixed bottom-4 right-4 bg-white rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100 flex flex-col overflow-hidden z-[100]"
@@ -147,7 +159,7 @@ const ChatBot: React.FC = () => {
                   <Bot size={24} />
                 </div>
                 <div>
-                  <h3 className="font-black text-sm uppercase tracking-widest">Chat bot</h3>
+                  <h3 className="font-black text-sm uppercase tracking-widest">Chat bot AI</h3>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
                     <span className="text-[10px] font-bold opacity-70">Đang trực tuyến</span>
@@ -155,16 +167,10 @@ const ChatBot: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
+                <button onClick={() => setIsMinimized(!isMinimized)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                   {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
                 </button>
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
+                <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                   <X size={18} />
                 </button>
               </div>
@@ -172,13 +178,10 @@ const ChatBot: React.FC = () => {
 
             {!isMinimized && (
               <>
-                {/* Messages */}
+                {/* Danh sách tin nhắn */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gray-50/50">
                   {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-3 max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           msg.sender === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-white text-gray-400 shadow-sm'
@@ -198,6 +201,7 @@ const ChatBot: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                  
                   {isLoading && (
                     <div className="flex justify-start">
                       <div className="flex gap-3">
@@ -213,23 +217,23 @@ const ChatBot: React.FC = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Suggestions */}
+                {/* Gợi ý nhanh (Đã sửa lỗi phản hồi) */}
                 <div className="px-6 py-2 flex gap-2 overflow-x-auto custom-scrollbar bg-white">
                   <button 
-                    onClick={() => { setInput('Làm sao để kiếm thêm thu nhập?'); handleSend(); }}
+                    onClick={() => handleSend('Làm sao để kiếm thêm thu nhập?')}
                     className="whitespace-nowrap px-4 py-2 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-indigo-100 transition-colors"
                   >
                     💰 Kiếm thêm thu nhập?
                   </button>
                   <button 
-                    onClick={() => { setInput('Phân tích chi tiêu tháng này'); handleSend(); }}
+                    onClick={() => handleSend('Phân tích chi tiêu tháng này')}
                     className="whitespace-nowrap px-4 py-2 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-indigo-100 transition-colors"
                   >
                     📊 Phân tích chi tiêu
                   </button>
                 </div>
 
-                {/* Input */}
+                {/* Ô nhập tin nhắn */}
                 <div className="p-6 bg-white border-t border-gray-100">
                   <div className="relative">
                     <input
@@ -241,9 +245,9 @@ const ChatBot: React.FC = () => {
                       className="w-full pl-6 pr-14 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-indigo-500 outline-none font-bold text-sm transition-all"
                     />
                     <button
-                      onClick={handleSend}
+                      onClick={() => handleSend()}
                       disabled={!input.trim() || isLoading}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:hover:bg-indigo-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition-all disabled:opacity-50"
                     >
                       <Send size={18} />
                     </button>
@@ -257,6 +261,7 @@ const ChatBot: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }

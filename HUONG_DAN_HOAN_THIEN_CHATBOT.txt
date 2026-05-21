@@ -1,0 +1,86 @@
+CAC BUOC HOAN THIEN CHATBOT TRONG DU AN APPCHI TIEU
+
+1. KIEM TRA FILE GOC
+- Mo project va xac dinh chatbot dang nam trong components/ChatBot.tsx
+- Kiem tra nguon du lieu trong context/FinanceContext.tsx
+- Xac dinh chatbot cu dang phu thuoc gan nhu hoan toan vao Gemini API
+
+2. XAC DINH VAN DE CUA BAN GOC
+- Thieu API key la chatbot khong tra loi duoc
+- Chua co co che fallback noi bo
+- Chua co logic phan tich tai chinh tu du lieu that trong app
+- Chua luu lich su chat
+- README chua huong dan ro cach chay va cau hinh chatbot
+
+3. TAO LOGIC CHATBOT NOI BO
+- Tao file moi: utils/chatbot.ts
+- Viet cac ham xu ly:
+  + Phan tich tong thu thang hien tai
+  + Phan tich tong chi thang hien tai
+  + Tinh chenhlech thu chi
+  + Tim nhom chi lon nhat
+  + Kiem tra ngan sach sap vuot muc
+  + Kiem tra hoa don sap den han
+  + Kiem tra tien do tiet kiem
+  + Phan tich so du vi
+  + Tong hop khoan vay va dau tu
+- Tao ham generateLocalResponse() de chatbot tra loi khong can AI online
+
+4. NANG CAP GIAO DIEN CHATBOT
+- Sua lai file components/ChatBot.tsx
+- Them hien thi trang thai:
+  + Co API key -> AI nang cao
+  + Khong co API key -> Chatbot noi bo an toan
+- Them nut xoa lich su chat
+- Them luu lich su vao localStorage
+- Them goi y cau hoi nhanh theo du lieu hien co trong app
+- Chinh lai placeholder va thong diep mo dau cho ro hon
+
+5. THEM CHE DO AI NANG CAO TUY CHON
+- Neu co VITE_GEMINI_API_KEY thi chatbot se goi Gemini
+- Neu Gemini loi hoac thieu key thi tu dong quay ve chatbot noi bo
+- Nhu vay ung dung van hoat dong on dinh
+
+6. THEM FILE CAU HINH MAU
+- Tao file .env.example
+- Muc dich: de ban chi can copy sang .env.local roi dien API key neu can
+
+7. CAP NHAT HUONG DAN SU DUNG
+- Sua README.md
+- Bo sung:
+  + Cach cai dat
+  + Cach chay local
+  + Cach bat Gemini
+  + Cac cau hoi chatbot ho tro tot
+  + Cau truc file lien quan den chatbot
+
+8. SUA SCRIPT CHAY TRONG package.json
+- Chinh script de goi vite bang duong dan node truc tiep
+- Muc dich: giam loi quyen thuc thi trong mot so moi truong giai nen zip
+
+9. BO SUNG KHAI BAO KIEU CHO VITE
+- Tao vite-env.d.ts
+- Muc dich: sua loi TypeScript voi import.meta.env
+
+10. KIEM TRA
+- TypeScript da qua buoc kiem tra cu phap
+- Qua trinh build Vite tren moi truong hien tai bi dung o optional dependency cua Rollup trong node_modules co san tu file goc
+- Day la loi dependency cua goi da giai nen, khong phai loi logic chatbot moi
+
+11. CAC FILE DA SUA / THEM
+- components/ChatBot.tsx
+- utils/chatbot.ts
+- README.md
+- package.json
+- .env.example
+- vite-env.d.ts
+- HUONG_DAN_HOAN_THIEN_CHATBOT.txt
+
+12. GOI Y DE CHAY O MAY BAN
+- Mo terminal trong thu muc du an
+- Chay: npm install
+- Chay: npm run dev
+- Neu muon dung Gemini:
+  + Tao .env.local
+  + Them dong VITE_GEMINI_API_KEY=...
+
