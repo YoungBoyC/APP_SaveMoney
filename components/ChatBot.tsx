@@ -128,6 +128,17 @@ const getGeminiApiKey = () => {
   return import.meta.env.VITE_GEMINI_API_KEY?.trim();
 };
 
+const STORAGE_KEY = 'mc_chatbot_messages';
+
+const getApiKey = () => {
+  return (
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.GEMINI_API_KEY ||
+    (window as any).__GEMINI_API_KEY__ ||
+    ''
+  ); 
+};
+
 const ChatBot: React.FC = () => {
   const finance = useFinance();
 
@@ -748,7 +759,6 @@ ${question}
 
                   <div className="relative mt-2">
                     <input
-                      type="text"
                       value={input}
                       onChange={(event) => setInput(event.target.value)}
                       onKeyDown={(event) => {
